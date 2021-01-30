@@ -27,6 +27,7 @@ package org.spongepowered.common.command.parameter.managed.standard;
 import net.kyori.adventure.text.Component;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.spongepowered.api.ResourceKey;
+import org.spongepowered.api.command.CommandCause;
 import org.spongepowered.api.command.exception.ArgumentParseException;
 import org.spongepowered.api.command.parameter.ArgumentReader;
 import org.spongepowered.api.command.parameter.CommandContext;
@@ -51,10 +52,9 @@ public final class SpongeTargetEntityValueParameter extends ResourceKeyedZeroAdv
     @Override
     @NonNull
     public Optional<? extends Entity> getValue(
-            final CommandContext.@NonNull Builder context,
-            final ArgumentReader.@NonNull Mutable reader) throws ArgumentParseException {
+            final @NonNull CommandCause cause, final ArgumentReader.@NonNull Mutable reader) throws ArgumentParseException {
 
-        final Object root = context.getCause().getCause().root();
+        final Object root = cause.getCause().root();
         if (root instanceof Living) {
             final Living living = (Living) root;
             final Optional<RayTraceResult<@NonNull Entity>> rayTraceResult =

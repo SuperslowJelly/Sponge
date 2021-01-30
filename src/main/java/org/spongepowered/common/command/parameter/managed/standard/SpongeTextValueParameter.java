@@ -60,7 +60,7 @@ public final class SpongeTextValueParameter extends AbstractArgumentParser<Compo
 
     @Override
     @NonNull
-    public List<String> complete(@NonNull final CommandContext context, final String currentInput) {
+    public List<String> complete(final @NonNull CommandContext context, final @NonNull String currentInput) {
         return ImmutableList.of();
     }
 

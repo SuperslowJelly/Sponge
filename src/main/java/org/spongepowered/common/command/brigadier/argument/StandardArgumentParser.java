@@ -31,15 +31,20 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import com.mojang.brigadier.tree.RootCommandNode;
 import net.kyori.adventure.text.Component;
+import net.minecraft.commands.CommandSourceStack;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.spongepowered.api.command.CommandCause;
 import org.spongepowered.api.command.exception.ArgumentParseException;
 import org.spongepowered.api.command.parameter.ArgumentReader;
 import org.spongepowered.api.command.parameter.CommandContext;
 import org.spongepowered.api.command.parameter.Parameter;
 import org.spongepowered.api.command.parameter.managed.ValueParameter;
 import org.spongepowered.common.command.brigadier.SpongeStringReader;
+import org.spongepowered.common.command.brigadier.context.SpongeCommandContext;
 import org.spongepowered.common.command.brigadier.context.SpongeCommandContextBuilder;
+import org.spongepowered.common.command.brigadier.tree.SpongeRootCommandNode;
 
 import java.util.Collection;
 import java.util.List;
@@ -50,7 +55,7 @@ import java.util.stream.Collectors;
 /**
  * For use with ArgumentTypes in the base game
  */
-public class StandardArgumentParser<S, T> implements ArgumentParser<T>, ValueParameter<T> {
+public class StandardArgumentParser<S, T> implements ArgumentParser<T>, ValueParameter.Simple<T> {
 
     public static <T> StandardArgumentParser<T, T> createIdentity(final ArgumentType<T> type) {
         return new StandardArgumentParser<>(type, (reader, c, x) -> x);
@@ -79,7 +84,7 @@ public class StandardArgumentParser<S, T> implements ArgumentParser<T>, ValuePar
             final Parameter.Key<? super T> key,
             final SpongeCommandContextBuilder contextBuilder,
             final SpongeStringReader reader) throws CommandSyntaxException {
-        return this.converter.convert(reader, contextBuilder, this.type.parse(reader));
+        return this.converter.convert(reader, contextBuilder.getCause(), this.type.parse(reader));
     }
 
     @Override
@@ -106,19 +111,19 @@ public class StandardArgumentParser<S, T> implements ArgumentParser<T>, ValuePar
 
     @Override
     @NonNull
-    public List<String> complete(@NonNull final CommandContext context, final String currentInput) {
+    public List<String> complete(final @NonNull CommandCause context, final @NonNull String currentInput) {
         final SuggestionsBuilder suggestionsBuilder = new SuggestionsBuilder(currentInput, 0);
-        this.listSuggestions((com.mojang.brigadier.context.CommandContext<?>) context, suggestionsBuilder);
+        this.listSuggestions(
+                new SpongeCommandContextBuilder(null, (CommandSourceStack) context, new RootCommandNode<>(), 0).build(currentInput), suggestionsBuilder);
         return suggestionsBuilder.build().getList().stream().map(Suggestion::getText).collect(Collectors.toList());
     }
 
     @Override
     @NonNull
-    public Optional<? extends T> getValue(final Parameter.@NonNull Key<? super T> parameterKey, final ArgumentReader.@NonNull Mutable reader,
-            final CommandContext.@NonNull Builder context)
+    public Optional<? extends T> getValue(final @NonNull CommandCause cause, final ArgumentReader.@NonNull Mutable reader)
             throws ArgumentParseException {
         try {
-            return Optional.of(this.parse(parameterKey, (SpongeCommandContextBuilder) context, (SpongeStringReader) reader));
+            return Optional.of(this.converter.convert((StringReader) reader, cause, this.type.parse((StringReader) reader)));
         } catch (final CommandSyntaxException e) {
             throw new ArgumentParseException(Component.text(e.getMessage()), e, e.getInput(), e.getCursor());
         }
@@ -127,7 +132,7 @@ public class StandardArgumentParser<S, T> implements ArgumentParser<T>, ValuePar
     @FunctionalInterface
     public interface Converter<S, T> {
 
-        T convert(StringReader reader, SpongeCommandContextBuilder contextBuilder, S input) throws CommandSyntaxException;
+        T convert(StringReader reader, CommandCause cause, S input) throws CommandSyntaxException;
 
     }
 

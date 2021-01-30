@@ -24,10 +24,20 @@
  */
 package org.spongepowered.common.command.brigadier.argument;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.spongepowered.api.ResourceKey;
+import org.spongepowered.api.command.exception.ArgumentParseException;
+import org.spongepowered.api.command.parameter.ArgumentReader;
+import org.spongepowered.api.command.parameter.CommandContext;
+import org.spongepowered.api.command.parameter.Parameter;
+import org.spongepowered.api.command.parameter.managed.ValueParameter;
 import org.spongepowered.api.command.parameter.managed.standard.ResourceKeyedValueParameter;
 
-public abstract class ResourceKeyedArgumentValueParser<T> extends AbstractArgumentParser<T> implements ResourceKeyedValueParameter<T> {
+import java.util.List;
+import java.util.Optional;
+
+public abstract class ResourceKeyedArgumentValueParser<T> extends AbstractArgumentParser<T> implements ResourceKeyedValueParameter<T>,
+        ValueParameter.Simple<T> {
 
     private final ResourceKey key;
 
@@ -36,7 +46,22 @@ public abstract class ResourceKeyedArgumentValueParser<T> extends AbstractArgume
     }
 
     @Override
+    @NonNull
     public final ResourceKey getKey() {
         return this.key;
     }
+
+    @Override
+    public final Optional<? extends T> getValue(final Parameter.@NonNull Key<? super T> parameterKey,
+            final ArgumentReader.@NonNull Mutable reader,
+            final CommandContext.@NonNull Builder context) throws ArgumentParseException {
+        return this.getValue(context.getCause(), reader);
+    }
+
+    @Override
+    @NonNull
+    public final List<String> complete(final @NonNull CommandContext context, final @NonNull String currentInput) {
+        return this.complete(context.getCause(), currentInput);
+    }
+
 }

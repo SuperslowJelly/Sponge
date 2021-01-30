@@ -29,10 +29,12 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.kyori.adventure.text.Component;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.EntityArgument;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.spongepowered.api.ResourceKey;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.command.CommandCause;
 import org.spongepowered.api.command.exception.ArgumentParseException;
 import org.spongepowered.api.command.parameter.ArgumentReader;
 import org.spongepowered.api.command.parameter.CommandContext;
@@ -68,7 +70,7 @@ public final class SpongeUserValueParameter extends ResourceKeyedArgumentValuePa
 
     @Override
     @NonNull
-    public List<String> complete(@NonNull final CommandContext context, @NonNull final String currentInput) {
+    public List<String> complete(final @NonNull CommandCause cause, @NonNull final String currentInput) {
         return Sponge.getServer().getUserManager().streamOfMatches(currentInput).filter(GameProfile::hasName)
                 .map(x -> x.getName().orElse("")).collect(Collectors.toList());
     }
@@ -76,16 +78,14 @@ public final class SpongeUserValueParameter extends ResourceKeyedArgumentValuePa
     @Override
     @NonNull
     public Optional<? extends User> getValue(
-            final Parameter.@NonNull Key<? super User> parameterKey,
-            final ArgumentReader.@NonNull Mutable reader,
-            final CommandContext.@NonNull Builder context)
+            final @NonNull CommandCause cause, final ArgumentReader.@NonNull Mutable reader)
             throws ArgumentParseException {
         final String peek = reader.peekString();
         if (peek.startsWith("@")) {
             try {
                 final ServerPlayer entity =
                         (ServerPlayer) (this.selectorArgumentType.parse((StringReader) reader)
-                                .findSingleEntity(((SpongeCommandContextBuilder) context).getSource()));
+                                .findSingleEntity(((CommandSourceStack) cause)));
                 return Optional.of(entity.getUser());
             } catch (final CommandSyntaxException e) {
                 throw reader.createException(Component.text(e.getContext()));
